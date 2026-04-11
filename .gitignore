@@ -39,3 +39,27 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Common Node.js stuff
+logs
+*.log
+coverage
+.nyc_output
+.npm
+.eslintcache
+.stylelintcache
+.node_repl_history
+.cache
+.parcel-cache
+.next
+out
+.nuxt
+
+# yarn v3
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
