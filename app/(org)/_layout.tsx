@@ -44,6 +44,14 @@ export default function OrgLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="leaders"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="🏆" label="Leaders" focused={focused} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

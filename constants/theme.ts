@@ -35,11 +35,13 @@ export const CATEGORY_META = {
   beautification: { label: 'Beautification', icon: '🌿', color: '#4A7C2F', bg: '#EDF5E9' },
   community: { label: 'Community', icon: '🤝', color: '#D97B2F', bg: '#FDF3EB' },
   environment: { label: 'Environment', icon: '♻️', color: '#2F9FA8', bg: '#EBF7F8' },
+  convenience: { label: 'Convenience', icon: '🪑', color: '#8E44AD', bg: '#F4ECF7' },
 } as const;
 
 export type Category = keyof typeof CATEGORY_META;
 
 export const STATUS_META = {
+  pending: { label: 'Pending Review', color: '#9B59B6', bg: '#F5EEF8' },
   open: { label: 'Open', color: '#E05C5C', bg: '#FDF0F0' },
   acknowledged: { label: 'Acknowledged', color: '#D97B2F', bg: '#FDF3EB' },
   in_progress: { label: 'In Progress', color: '#5B8DD9', bg: '#EFF4FC' },

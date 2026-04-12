@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useApp } from '../../context/AppContext';
+import { useApp, getRankInfo } from '../../context/AppContext';
 import { COLORS, CATEGORY_META, STATUS_META, FONT, SPACING, RADIUS } from '../../constants/theme';
 
 const { width } = Dimensions.get('window');
@@ -32,9 +32,10 @@ function getTimeAgo(dateStr: string) {
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { posts, toggleUpvote, userRole } = useApp();
+  const { posts, updatePost, toggleUpvote, userRole } = useApp();
   const post = posts.find(p => p.id === id);
   const [pulse] = useState(new Animated.Value(1));
+  const [showOrgTools, setShowOrgTools] = useState(false);
 
   if (!post) {
     return (
@@ -121,6 +122,50 @@ export default function PostDetailScreen() {
               </TouchableOpacity>
             </Animated.View>
           </View>
+
+          {/* External Campaigns added by Orgs */}
+          {(post.petition_url || post.funding_url) && (
+            <View style={styles.campaignSection}>
+              <Text style={styles.campaignTitle}>Community Action Links</Text>
+              {post.petition_url && (
+                <TouchableOpacity style={styles.campaignBtn}>
+                  <Text style={styles.campaignBtnText}>📝 Sign Petition</Text>
+                </TouchableOpacity>
+              )}
+              {post.funding_url && (
+                <TouchableOpacity style={[styles.campaignBtn, { backgroundColor: '#27AE60' }]}>
+                  <Text style={[styles.campaignBtnText, { color: COLORS.white }]}>💚 Support GoFundMe</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Org Tools */}
+          {userRole === 'org' && post.upvotes >= 20 && !post.petition_url && !post.funding_url && (
+            <View style={styles.orgSection}>
+              {!showOrgTools ? (
+                <TouchableOpacity style={styles.orgActionBtn} onPress={() => setShowOrgTools(true)}>
+                  <Text style={styles.orgActionBtnText}>+ Attach Campaign / GoFundMe</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.orgToolsForm}>
+                  <Text style={styles.orgToolsText}>This post has high traction. Connect a real-world action:</Text>
+                  <TouchableOpacity style={styles.orgActionBtn} onPress={() => {
+                    updatePost(post.id, { petition_url: 'https://change.org/demo' });
+                    setShowOrgTools(false);
+                  }}>
+                    <Text style={styles.orgActionBtnText}>Add Change.org Petition</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.orgActionBtn, { backgroundColor: '#E9F7EF', borderColor: '#27AE60' }]} onPress={() => {
+                    updatePost(post.id, { funding_url: 'https://gofundme.com/demo' });
+                    setShowOrgTools(false);
+                  }}>
+                    <Text style={[styles.orgActionBtnText, { color: '#27AE60' }]}>Add GoFundMe</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Divider */}
           <View style={styles.divider} />
@@ -275,6 +320,46 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     marginBottom: 12,
   },
+
+  campaignSection: {
+    marginTop: 16,
+    backgroundColor: '#F4ECF7',
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#D2B4DE',
+  },
+  campaignTitle: { fontFamily: FONT.bold, fontSize: 14, color: '#8E44AD', marginBottom: 10 },
+  campaignBtn: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.sm,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#D2B4DE',
+  },
+  campaignBtnText: { fontFamily: FONT.bold, fontSize: 14, color: '#8E44AD' },
+
+  orgSection: { marginTop: 16 },
+  orgActionBtn: {
+    backgroundColor: COLORS.white,
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    borderColor: COLORS.beige400,
+    borderRadius: RADIUS.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  orgActionBtnText: { fontFamily: FONT.semiBold, fontSize: 13, color: COLORS.textMid },
+  orgToolsForm: {
+    backgroundColor: COLORS.beige200,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    gap: 8,
+  },
+  orgToolsText: { fontFamily: FONT.regular, fontSize: 13, color: COLORS.textDark, marginBottom: 4 },
 
   comments: { gap: 12 },
   comment: {

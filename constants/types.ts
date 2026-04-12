@@ -8,6 +8,23 @@ export interface Neighborhood {
   description: string;
 }
 
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  earned_at?: string;
+  unlocked: boolean;
+}
+
+export interface UserStats {
+  xp: number;
+  level: number;
+  rank: string;
+  badges: Badge[];
+  is_verified: boolean;
+}
+
 export interface Post {
   id: string;
   title: string;
@@ -24,4 +41,8 @@ export interface Post {
   status: Status;
   created_at: string;
   has_upvoted?: boolean;
+  is_anonymous?: boolean;
+  verified?: boolean;
+  petition_url?: string;
+  funding_url?: string;
 }

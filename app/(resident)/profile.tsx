@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useApp } from '../../context/AppContext';
+import { useApp, getRankInfo } from '../../context/AppContext';
 import { COLORS, FONT, SPACING, RADIUS, CATEGORY_META, STATUS_META } from '../../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -18,14 +18,14 @@ const MOCK_USER = {
   avatar: 'https://i.pravatar.cc/150?img=3',
   neighborhood: 'Fishtown',
   joined: 'March 2026',
-  postsCount: 4,
-  upvotesGiven: 23,
-  impact: 'Got 2 issues acknowledged',
 };
 
 export default function ProfileScreen() {
-  const { posts, setUserRole } = useApp();
+  const { posts, setUserRole, userStats } = useApp();
   const myPosts = posts.filter(p => p.author_name === 'You' || p.author_name === 'Alex Rivera').slice(0, 3);
+  
+  const rankInfo = getRankInfo(userStats.xp);
+  const progressPercent = Math.min((userStats.xp / rankInfo.nextXp) * 100, 100);
 
   const handleLogout = () => {
     setUserRole(null);
@@ -43,42 +43,55 @@ export default function ProfileScreen() {
           end={{ x: 1, y: 1 }}
         >
           <Image source={{ uri: MOCK_USER.avatar }} style={styles.avatar} />
-          <Text style={styles.name}>{MOCK_USER.name}</Text>
-          <Text style={styles.neighborhood}>📍 {MOCK_USER.neighborhood}</Text>
-          <Text style={styles.joined}>Member since {MOCK_USER.joined}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{MOCK_USER.name}</Text>
+            {userStats.is_verified && (
+              <View style={styles.verifyBadge}>
+                <Text style={styles.verifyIcon}>✓</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.neighborhood}>📍 {MOCK_USER.neighborhood} · Joined {MOCK_USER.joined}</Text>
+          
+          <View style={styles.levelPill}>
+            <Text style={styles.levelText}>Lvl {rankInfo.level} · {rankInfo.rank}</Text>
+          </View>
+
+          <View style={styles.xpContainer}>
+            <View style={styles.xpHeader}>
+              <Text style={styles.xpTitle}>Next Rank</Text>
+              <Text style={styles.xpCount}>{userStats.xp} / {rankInfo.nextXp} XP</Text>
+            </View>
+            <View style={styles.xpBarTrack}>
+              <View style={[styles.xpBarFill, { width: `${progressPercent}%` as any }]} />
+            </View>
+          </View>
         </LinearGradient>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNum}>{MOCK_USER.postsCount}</Text>
-            <Text style={styles.statLabel}>Issues Posted</Text>
+        {/* Badges Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Achievements</Text>
+          <View style={styles.badgesGrid}>
+            {userStats.badges.map(b => (
+              <View key={b.id} style={[styles.badgeCard, !b.unlocked && styles.badgeLocked]}>
+                <View style={[styles.badgeIconBg, !b.unlocked && styles.badgeIconBgLocked]}>
+                  <Text style={styles.badgeEmoji}>{b.emoji}</Text>
+                </View>
+                <Text style={styles.badgeName}>{b.name}</Text>
+                <Text style={styles.badgeDesc}>{b.description}</Text>
+                {!b.unlocked && <Text style={styles.lockedText}>Locked</Text>}
+              </View>
+            ))}
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCard}>
-            <Text style={styles.statNum}>{MOCK_USER.upvotesGiven}</Text>
-            <Text style={styles.statLabel}>Upvotes Given</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCard}>
-            <Text style={styles.statNum}>2</Text>
-            <Text style={styles.statLabel}>Resolved</Text>
-          </View>
-        </View>
-
-        {/* Impact pill */}
-        <View style={styles.impactPill}>
-          <Text style={styles.impactEmoji}>⚡</Text>
-          <Text style={styles.impactText}>{MOCK_USER.impact}</Text>
         </View>
 
         {/* My Posts */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Posts</Text>
+          <Text style={styles.sectionTitle}>My Contributions</Text>
           {myPosts.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>You haven't posted yet.</Text>
-              <Text style={styles.emptySub}>Tap + to share an issue with your community.</Text>
+              <Text style={styles.emptySub}>Tap + to share an issue and earn XP!</Text>
             </View>
           ) : (
             myPosts.map(p => (
@@ -125,54 +138,58 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.4)',
+    borderColor: COLORS.greenLight,
     marginBottom: 8,
   },
-  name: { fontFamily: FONT.bold, fontSize: 22, color: COLORS.white },
-  neighborhood: { fontFamily: FONT.medium, fontSize: 14, color: 'rgba(255,255,255,0.8)' },
-  joined: { fontFamily: FONT.regular, fontSize: 12, color: 'rgba(255,255,255,0.6)' },
-
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.md,
-    marginTop: -20,
-    borderRadius: RADIUS.lg,
-    paddingVertical: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  statCard: { flex: 1, alignItems: 'center', gap: 3 },
-  statNum: { fontFamily: FONT.bold, fontSize: 24, color: COLORS.greenDark },
-  statLabel: { fontFamily: FONT.regular, fontSize: 12, color: COLORS.textMuted },
-  statDivider: { width: 1, backgroundColor: COLORS.beige200 },
-
-  impactPill: {
-    flexDirection: 'row',
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  name: { fontFamily: FONT.bold, fontSize: 24, color: COLORS.white },
+  verifyBadge: {
+    backgroundColor: '#3498DB',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: COLORS.greenPale,
+    borderWidth: 2,
+    borderColor: COLORS.greenDark,
+    marginTop: 2,
+  },
+  verifyIcon: { color: COLORS.white, fontSize: 10, fontFamily: FONT.bold },
+  
+  neighborhood: { fontFamily: FONT.medium, fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 8 },
+  
+  levelPill: {
+    backgroundColor: '#FFD166',
     borderRadius: RADIUS.full,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.greenLight,
+    paddingVertical: 6,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  impactEmoji: { fontSize: 18 },
-  impactText: { fontFamily: FONT.medium, fontSize: 14, color: COLORS.greenDark },
+  levelText: { fontFamily: FONT.bold, fontSize: 14, color: COLORS.textDark },
+
+  xpContainer: {
+    width: '85%',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: RADIUS.md,
+    padding: 12,
+  },
+  xpHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  xpTitle: { fontFamily: FONT.medium, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+  xpCount: { fontFamily: FONT.bold, fontSize: 12, color: COLORS.white },
+  xpBarTrack: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' },
+  xpBarFill: { height: '100%', backgroundColor: '#48C9B0', borderRadius: 4 },
 
   section: {
     paddingHorizontal: SPACING.md,
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
     gap: 12,
   },
   sectionTitle: {
@@ -180,6 +197,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: COLORS.textDark,
   },
+
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  badgeCard: {
+    width: '48%',
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    padding: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  badgeLocked: { opacity: 0.5, backgroundColor: COLORS.beige200 },
+  badgeIconBg: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FFF3E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  badgeIconBgLocked: { backgroundColor: COLORS.beige300 },
+  badgeEmoji: { fontSize: 24 },
+  badgeName: { fontFamily: FONT.bold, fontSize: 13, color: COLORS.textDark, textAlign: 'center', marginBottom: 2 },
+  badgeDesc: { fontFamily: FONT.regular, fontSize: 11, color: COLORS.textMuted, textAlign: 'center' },
+  lockedText: { fontFamily: FONT.semiBold, fontSize: 10, color: '#C0392B', marginTop: 6 },
 
   miniCard: {
     flexDirection: 'row',
@@ -210,6 +261,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.beige300,
     backgroundColor: COLORS.white,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xxl,
   },
   logoutText: { fontFamily: FONT.medium, fontSize: 14, color: COLORS.textMuted },
 });

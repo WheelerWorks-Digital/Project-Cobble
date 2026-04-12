@@ -28,6 +28,7 @@ export default function CreateScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
   const [neighborhood, setNeighborhood] = useState(NEIGHBORHOODS[0].id);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -69,12 +70,14 @@ export default function CreateScreen() {
       lng: nh.lng + (Math.random() - 0.5) * 0.01,
       neighborhood_id: nh.id,
       neighborhood_name: nh.name,
-      author_name: 'You',
+      author_name: isAnonymous ? 'Anonymous' : 'You',
       author_avatar: 'https://i.pravatar.cc/150?img=3',
       upvotes: 1,
-      status: 'open',
+      status: 'pending',
       created_at: new Date().toISOString(),
       has_upvoted: true,
+      is_anonymous: isAnonymous,
+      verified: false,
     };
     addPost(newPost);
     setStep(3);
@@ -86,6 +89,7 @@ export default function CreateScreen() {
     setTitle('');
     setDescription('');
     setCategory(null);
+    setIsAnonymous(false);
     router.push('/(resident)/feed');
   };
 
@@ -98,7 +102,7 @@ export default function CreateScreen() {
             <Text style={styles.successEmoji}>🎉</Text>
             <Text style={styles.successTitle}>Posted!</Text>
             <Text style={styles.successSub}>
-              Your issue is now live. Neighbors can see it and weigh in.
+              Your post is under review.{'\n'}Once verified it will go live for neighbors to see.
             </Text>
             <TouchableOpacity style={styles.successBtn} onPress={resetAndClose} activeOpacity={0.9}>
               <Text style={styles.successBtnText}>View in Feed</Text>
@@ -226,6 +230,24 @@ export default function CreateScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            {/* Anonymous toggle */}
+            <TouchableOpacity
+              style={[styles.anonToggle, isAnonymous && styles.anonToggleActive]}
+              onPress={() => setIsAnonymous(v => !v)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.anonDot, isAnonymous && styles.anonDotActive]} />
+              <View style={styles.anonContent}>
+                <Text style={styles.anonTitle}>Post anonymously</Text>
+                <Text style={styles.anonSub}>
+                  {isAnonymous
+                    ? 'Your name will be hidden from neighbors'
+                    : 'Your name will be shown on this post'}
+                </Text>
+              </View>
+              <Text style={styles.anonCheck}>{isAnonymous ? '✓' : ''}</Text>
+            </TouchableOpacity>
 
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.backBtn} onPress={() => setStep(1)}>
@@ -405,6 +427,52 @@ const styles = StyleSheet.create({
   },
   nhChipText: { fontFamily: FONT.medium, fontSize: 13, color: COLORS.textMid },
   nhChipTextActive: { color: COLORS.white },
+
+  anonToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.beige300,
+  },
+  anonToggleActive: {
+    borderColor: COLORS.greenLight,
+    backgroundColor: COLORS.greenPale,
+  },
+  anonDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.beige400,
+    backgroundColor: COLORS.white,
+  },
+  anonDotActive: {
+    borderColor: COLORS.greenMid,
+    backgroundColor: COLORS.greenMid,
+  },
+  anonContent: { flex: 1 },
+  anonTitle: {
+    fontFamily: FONT.semiBold,
+    fontSize: 14,
+    color: COLORS.textDark,
+  },
+  anonSub: {
+    fontFamily: FONT.regular,
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  anonCheck: {
+    fontFamily: FONT.bold,
+    fontSize: 16,
+    color: COLORS.greenMid,
+    width: 20,
+    textAlign: 'center',
+  },
 
   actionRow: { flexDirection: 'row', gap: 10 },
   backBtn: {

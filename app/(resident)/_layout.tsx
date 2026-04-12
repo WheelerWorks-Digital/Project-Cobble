@@ -1,6 +1,8 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, FONT } from '../../constants/theme';
+import { useApp } from '../../context/AppContext';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
@@ -12,6 +14,15 @@ function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focu
 }
 
 export default function ResidentLayout() {
+  const { userRole } = useApp();
+
+  // When userRole is cleared (switch account), navigate back to landing
+  useEffect(() => {
+    if (userRole === null) {
+      router.replace('/');
+    }
+  }, [userRole]);
+
   return (
     <Tabs
       screenOptions={{
@@ -43,6 +54,22 @@ export default function ResidentLayout() {
             <View style={styles.createBtn}>
               <Text style={styles.createPlus}>+</Text>
             </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="sidequests"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="⚡" label="Quests" focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="leaders"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="🏆" label="Leaders" focused={focused} />
           ),
         }}
       />

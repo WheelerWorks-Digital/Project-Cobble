@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  Animated,
+  TextInput,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,37 +17,48 @@ import { COLORS, CATEGORY_META, FONT, SPACING, RADIUS, Category } from '../../co
 import { Post } from '../../constants/types';
 import { NEIGHBORHOODS } from '../../constants/mockData';
 
-const { width, height } = Dimensions.get('window');
-const CARD_HEIGHT = 160;
+const { width } = Dimensions.get('window');
 
-function buildMapHtml(posts: Post[], selectedId: string | null) {
+// Stable HTML — does NOT depend on selectedId so the map never reloads on selection.
+// Markers are rendered as SVG pin icons for issues and pill labels for neighborhoods.
+function buildMapHtml(posts: Post[]) {
   const markers = posts.map(p => {
     const cat = CATEGORY_META[p.category];
-    const isSelected = p.id === selectedId;
+    const isPending = p.status === 'pending';
+    const pinColor = isPending ? '#9B59B6' : cat.color;
+    const escapedTitle = p.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     return `
-      L.circleMarker([${p.lat}, ${p.lng}], {
-        radius: ${isSelected ? 18 : 12},
-        fillColor: '${cat.color}',
-        color: '#fff',
-        weight: ${isSelected ? 3 : 2},
-        opacity: 1,
-        fillOpacity: ${isSelected ? 1 : 0.85},
-      })
-      .addTo(map)
-      .bindTooltip('<b>${p.title.replace(/'/g, "\\'")}</b>', { permanent: false, direction: 'top' })
-      .on('click', function() {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'selectPost', id: '${p.id}' }));
-      });
-    `;
+      (function() {
+        var icon = L.divIcon({
+          className: '',
+          html: '<div style="width:26px;height:34px;position:relative;cursor:pointer">'
+            + '<svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">'
+            + '<path d="M13 1C6.925 1 2 5.925 2 12c0 8.5 11 21 11 21s11-12.5 11-21C24 5.925 19.075 1 13 1z" fill="${pinColor}" stroke="white" stroke-width="2"/>'
+            + '<circle cx="13" cy="12" r="4.5" fill="white" fill-opacity="0.9"/>'
+            + '</svg></div>',
+          iconSize: [26, 34],
+          iconAnchor: [13, 34],
+          tooltipAnchor: [0, -36],
+        });
+        L.marker([${p.lat}, ${p.lng}], { icon: icon })
+          .addTo(map)
+          .bindTooltip('<b>${escapedTitle}</b>', { permanent: false, direction: 'top', className: 'cobble-tip' })
+          .on('click', function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'selectPost', id: '${p.id}' }));
+          });
+      })();
+    `.replace('${pinColor}', pinColor);
   }).join('\n');
 
   const neighborhoodLabels = NEIGHBORHOODS.map(n => `
     L.marker([${n.lat}, ${n.lng}], {
       icon: L.divIcon({
         className: '',
-        html: '<div style="background:rgba(45,80,22,0.75);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px;font-family:sans-serif;font-weight:600;white-space:nowrap;border:1px solid rgba(255,255,255,0.3)">${n.name}</div>',
-        iconAnchor: [40, 12],
-      })
+        html: '<div style="background:transparent;color:#000;padding:5px 12px;border-radius:20px;font-size:12px;font-family:sans-serif;font-weight:700;white-space:nowrap;letter-spacing:0.3px;">${n.name}</div>',
+        iconAnchor: [40, 14],
+      }),
+      interactive: false,
+      zIndexOffset: -100,
     }).addTo(map);
   `).join('\n');
 
@@ -65,14 +76,15 @@ function buildMapHtml(posts: Post[], selectedId: string | null) {
     .leaflet-tile { filter: saturate(0.6) sepia(0.25) hue-rotate(60deg) brightness(1.05); }
     .leaflet-control-attribution { display: none; }
     .leaflet-control-zoom { display: none; }
+    .cobble-tip { font-family: sans-serif; font-size: 12px; border-radius: 8px; padding: 4px 8px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
     var map = L.map('map', {
-      center: [39.9785, -75.1330],
-      zoom: 13,
+      center: [39.9700, -75.1650],
+      zoom: 12,
       zoomControl: false,
     });
 
@@ -88,15 +100,30 @@ function buildMapHtml(posts: Post[], selectedId: string | null) {
   `;
 }
 
-const CATEGORIES: (Category | 'all')[] = ['all', 'safety', 'infrastructure', 'beautification', 'community', 'environment'];
+const CATEGORIES: (Category | 'all')[] = ['all', 'convenience', 'safety', 'infrastructure', 'beautification', 'community', 'environment'];
 
 export default function MapScreen() {
   const { posts } = useApp();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Category | 'all'>('all');
+  const [search, setSearch] = useState('');
   const webViewRef = useRef<any>(null);
 
-  const filteredPosts = filter === 'all' ? posts : posts.filter(p => p.category === filter);
+  const filteredPosts = useMemo(() => {
+    let result = posts.filter(p => p.status !== 'pending');
+    if (filter !== 'all') {
+      result = result.filter(p => p.category === filter);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.neighborhood_name.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [posts, filter, search]);
+
   const selectedPost = posts.find(p => p.id === selectedId) ?? null;
 
   const handleMessage = useCallback((event: any) => {
@@ -108,7 +135,8 @@ export default function MapScreen() {
     } catch {}
   }, []);
 
-  const mapHtml = buildMapHtml(filteredPosts, selectedId);
+  // Only rebuild HTML when filtered posts change — never when selectedId changes
+  const mapHtml = useMemo(() => buildMapHtml(filteredPosts), [filteredPosts]);
 
   return (
     <View style={styles.container}>
@@ -131,9 +159,15 @@ export default function MapScreen() {
             <Text style={styles.logoEmoji}>🪨</Text>
             <Text style={styles.logoLabel}>Cobble</Text>
           </View>
-          <View style={styles.locationPill}>
-            <Text style={styles.locationText}>📍 Philadelphia, PA</Text>
-          </View>
+          <TextInput
+            style={styles.searchBar}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search issues, places…"
+            placeholderTextColor={COLORS.textLight}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
         </View>
 
         {/* Filter chips */}
@@ -183,7 +217,11 @@ export default function MapScreen() {
           </TouchableOpacity>
 
           <View style={styles.cardRow}>
-            <Image source={{ uri: selectedPost.image_url }} style={styles.cardImage} />
+            <Image
+              source={{ uri: selectedPost.image_url }}
+              style={styles.cardImage}
+              defaultSource={{ uri: 'https://via.placeholder.com/72x72/EDE6D6/9C9589?text=📍' }}
+            />
             <View style={styles.cardInfo}>
               <View style={[styles.catChip, { backgroundColor: CATEGORY_META[selectedPost.category].bg }]}>
                 <Text style={styles.catChipText}>
@@ -222,31 +260,35 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     marginHorizontal: SPACING.md,
     marginTop: 8,
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.xl,
     paddingHorizontal: SPACING.md,
-    paddingVertical: 10,
+    paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 6,
   },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  logoEmoji: { fontSize: 20 },
-  logoLabel: { fontFamily: FONT.bold, fontSize: 18, color: COLORS.greenDark },
-  locationPill: {
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  logoEmoji: { fontSize: 16 },
+  logoLabel: { fontFamily: FONT.bold, fontSize: 15, color: COLORS.greenDark },
+  searchBar: {
+    flex: 1,
+    fontFamily: FONT.regular,
+    fontSize: 14,
+    color: COLORS.textDark,
     backgroundColor: COLORS.beige100,
     borderRadius: RADIUS.full,
     paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingVertical: 7,
+    minHeight: 34,
   },
-  locationText: { fontFamily: FONT.medium, fontSize: 13, color: COLORS.textMid },
 
-  filterScroll: { marginTop: 10 },
+  filterScroll: { marginTop: 8 },
   filterContent: {
     paddingHorizontal: SPACING.md,
     gap: 8,
@@ -255,19 +297,19 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: COLORS.white,
     borderRadius: RADIUS.full,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
   },
-  chipEmoji: { fontSize: 13 },
-  chipLabel: { fontFamily: FONT.medium, fontSize: 13, color: COLORS.textMid },
+  chipEmoji: { fontSize: 18 },
+  chipLabel: { fontFamily: FONT.medium, fontSize: 16, color: COLORS.textMid },
   chipLabelActive: { color: COLORS.white },
 
   countBubble: {
@@ -287,7 +329,7 @@ const styles = StyleSheet.create({
 
   selectedCard: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 100,
     left: SPACING.md,
     right: SPACING.md,
     backgroundColor: COLORS.white,
