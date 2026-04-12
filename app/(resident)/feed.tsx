@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '../../context/AppContext';
 import { COLORS, CATEGORY_META, STATUS_META, FONT, SPACING, RADIUS, Category } from '../../constants/theme';
 import { NEIGHBORHOODS } from '../../constants/mockData';
@@ -21,20 +22,70 @@ type SortMode = 'trending' | 'new' | 'status';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80';
 
+// Quest link mappings: which quest categories correspond to feed actions
+const QUEST_CATEGORY_MAP: Record<string, string> = {
+  report: 'Snap & Report a Pothole',
+  infrastructure: 'Document 3 Infrastructure Issues',
+  community: 'Introduce Yourself to a Neighbor',
+};
+
+function QuestBanner({ category }: { category: string }) {
+  const questName = QUEST_CATEGORY_MAP[category];
+  if (!questName) return null;
+  return (
+    <TouchableOpacity 
+      style={questBannerStyles.container}
+      onPress={() => router.push('/(resident)/sidequests')}
+      activeOpacity={0.8}
+    >
+      <Text style={questBannerStyles.icon}>⚡</Text>
+      <Text style={questBannerStyles.text} numberOfLines={1}>Quest: {questName}</Text>
+      <Text style={questBannerStyles.arrow}>›</Text>
+    </TouchableOpacity>
+  );
+}
+
+const questBannerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D2218',
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#48C9B0',
+    gap: 6,
+  },
+  icon: { fontSize: 12 },
+  text: { flex: 1, fontFamily: FONT.medium, fontSize: 11, color: '#48C9B0' },
+  arrow: { fontFamily: FONT.bold, fontSize: 14, color: '#48C9B0' },
+});
+
 function PostCard({ post, onUpvote }: { post: Post; onUpvote: () => void }) {
   const cat = CATEGORY_META[post.category];
   const status = STATUS_META[post.status];
   const timeAgo = getTimeAgo(post.created_at);
-  const isPending = post.status === 'pending';
   const displayName = post.is_anonymous ? 'Anonymous' : post.author_name;
   const [imgError, setImgError] = useState(false);
+  const isTrending = post.upvotes >= 50;
+  const isHigh = post.upvotes >= 150;
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isTrending && styles.cardTrending, isHigh && styles.cardHigh]}
       onPress={() => router.push(`/post/${post.id}`)}
-      activeOpacity={0.92}
+      activeOpacity={0.9}
     >
+      {/* Trending glow bar */}
+      {isTrending && (
+        <View style={styles.trendingBar}>
+          <Text style={styles.trendingText}>{isHigh ? '🔥 HIGH PRIORITY' : '📈 TRENDING'}</Text>
+          <Text style={styles.trendingXp}>+10 XP</Text>
+        </View>
+      )}
+
       {post.image_url ? (
         <Image
           source={{ uri: imgError ? FALLBACK_IMAGE : post.image_url }}
@@ -45,19 +96,16 @@ function PostCard({ post, onUpvote }: { post: Post; onUpvote: () => void }) {
       ) : null}
 
       <View style={styles.cardBody}>
-        {isPending && (
-          <View style={styles.pendingBanner}>
-            <Text style={styles.pendingBannerText}>⏳ Pending verification — under review</Text>
-          </View>
-        )}
+        {/* Quest link banner */}
+        <QuestBanner category={post.category} />
 
         <View style={styles.cardMeta}>
-          <View style={[styles.catBadge, { backgroundColor: cat.bg }]}>
+          <View style={[styles.catBadge, { backgroundColor: cat.color + '22', borderColor: cat.color + '66' }]}>
             <Text style={[styles.catBadgeText, { color: cat.color }]}>
               {cat.icon} {cat.label}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+          <View style={[styles.statusBadge, { backgroundColor: status.color + '22' }]}>
             <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
@@ -72,17 +120,11 @@ function PostCard({ post, onUpvote }: { post: Post; onUpvote: () => void }) {
                 <Text style={styles.anonAvatarEmoji}>👤</Text>
               </View>
             ) : (
-              <Image
-                source={{ uri: post.author_avatar }}
-                style={styles.avatar}
-                onError={() => {}}
-              />
+              <Image source={{ uri: post.author_avatar }} style={styles.avatar} />
             )}
             <View>
               <Text style={styles.authorName}>{displayName}</Text>
-              <Text style={styles.cardTime}>
-                📍 {post.neighborhood_name} · {timeAgo}
-              </Text>
+              <Text style={styles.cardTime}>📍 {post.neighborhood_name} · {timeAgo}</Text>
             </View>
           </View>
 
@@ -91,7 +133,7 @@ function PostCard({ post, onUpvote }: { post: Post; onUpvote: () => void }) {
             onPress={onUpvote}
             activeOpacity={0.8}
           >
-            <Text style={styles.upvoteArrow}>▲</Text>
+            <Text style={[styles.upvoteArrow, post.has_upvoted && { color: '#48C9B0' }]}>▲</Text>
             <Text style={[styles.upvoteCount, post.has_upvoted && styles.upvoteCountActive]}>
               {post.upvotes}
             </Text>
@@ -112,16 +154,17 @@ function getTimeAgo(dateStr: string) {
 
 const ALL_NEIGHBORHOODS = [{ id: 'all', name: 'All Areas' }, ...NEIGHBORHOODS];
 const ALL_CATEGORIES: { id: Category | 'all'; label: string; icon: string }[] = [
-  { id: 'all', label: 'All', icon: '🗂️' },
+  { id: 'all', label: 'All', icon: '⚡' },
   { id: 'safety', label: 'Safety', icon: '🛡️' },
   { id: 'infrastructure', label: 'Infra', icon: '🔧' },
   { id: 'beautification', label: 'Beauty', icon: '🌿' },
   { id: 'community', label: 'Community', icon: '🤝' },
   { id: 'environment', label: 'Enviro', icon: '♻️' },
+  { id: 'convenience', label: 'Convenience', icon: '🪑' },
 ];
 
 export default function FeedScreen() {
-  const { posts, toggleUpvote } = useApp();
+  const { posts, toggleUpvote, userStats } = useApp();
   const [sort, setSort] = useState<SortMode>('trending');
   const [neighborhood, setNeighborhood] = useState('all');
   const [category, setCategory] = useState<Category | 'all'>('all');
@@ -130,6 +173,7 @@ export default function FeedScreen() {
 
   const filtered = useMemo(() => {
     let result = posts
+      .filter(p => p.status !== 'pending')
       .filter(p => neighborhood === 'all' || p.neighborhood_id === neighborhood)
       .filter(p => category === 'all' || p.category === category);
 
@@ -145,7 +189,6 @@ export default function FeedScreen() {
     return result.sort((a, b) => {
       if (sort === 'trending') return b.upvotes - a.upvotes;
       if (sort === 'new') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      // status: pending first, then open, acknowledged, in_progress, resolved
       const order = { pending: 0, open: 1, acknowledged: 2, in_progress: 3, resolved: 4 };
       return (order[a.status] ?? 5) - (order[b.status] ?? 5);
     });
@@ -158,12 +201,18 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header + search */}
-      <View style={styles.header}>
+      {/* Header */}
+      <LinearGradient
+        colors={['#0F1A14', '#162212']}
+        style={styles.header}
+      >
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.headerTitle}>Community Feed</Text>
-            <Text style={styles.headerSub}>{filtered.length} posts</Text>
+            <Text style={styles.headerLabel}>COMMUNITY</Text>
+            <Text style={styles.headerTitle}>MISSION BOARD</Text>
+          </View>
+          <View style={styles.xpChip}>
+            <Text style={styles.xpChipText}>⚡ {userStats.xp} XP</Text>
           </View>
         </View>
         <View style={styles.searchRow}>
@@ -172,25 +221,29 @@ export default function FeedScreen() {
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
-            placeholder="Search issues…"
-            placeholderTextColor={COLORS.textLight}
+            placeholder="Search missions…"
+            placeholderTextColor="#3D5A48"
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Sort tabs */}
       <View style={styles.sortRow}>
-        {(['trending', 'new', 'status'] as SortMode[]).map(s => (
+        {([
+          { key: 'trending', label: '🔥 HOT', },
+          { key: 'new', label: '✨ NEW' },
+          { key: 'status', label: '📊 STATUS' },
+        ] as { key: SortMode; label: string }[]).map(s => (
           <TouchableOpacity
-            key={s}
-            style={[styles.sortTab, sort === s && styles.sortTabActive]}
-            onPress={() => setSort(s)}
+            key={s.key}
+            style={[styles.sortTab, sort === s.key && styles.sortTabActive]}
+            onPress={() => setSort(s.key)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.sortLabel, sort === s && styles.sortLabelActive]}>
-              {s === 'trending' ? '🔥 Hot' : s === 'new' ? '✨ New' : '📊 Status'}
+            <Text style={[styles.sortLabel, sort === s.key && styles.sortLabelActive]}>
+              {s.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -226,22 +279,25 @@ export default function FeedScreen() {
       >
         {ALL_CATEGORIES.map(c => {
           const active = category === c.id;
-          const color = c.id !== 'all' ? CATEGORY_META[c.id as Category].color : COLORS.greenMid;
+          const color = c.id !== 'all' ? CATEGORY_META[c.id as Category].color : '#48C9B0';
           return (
             <TouchableOpacity
               key={c.id}
-              style={[styles.catChip, active && { backgroundColor: color, borderColor: color }]}
+              style={[styles.catChip, active && { backgroundColor: color + '33', borderColor: color }]}
               onPress={() => setCategory(c.id as Category | 'all')}
               activeOpacity={0.8}
             >
               <Text style={styles.catChipEmoji}>{c.icon}</Text>
-              <Text style={[styles.catChipText, active && styles.catChipTextActive]}>
-                {c.label}
-              </Text>
+              <Text style={[styles.catChipText, active && { color }]}>{c.label}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
+
+      {/* Post count label */}
+      <View style={styles.countRow}>
+        <Text style={styles.countText}>{filtered.length} MISSIONS ACTIVE</Text>
+      </View>
 
       {/* Posts */}
       <FlatList
@@ -256,14 +312,14 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.greenMid}
+            tintColor="#48C9B0"
           />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🌱</Text>
-            <Text style={styles.emptyText}>Nothing found.</Text>
-            <Text style={styles.emptySub}>Try adjusting your filters.</Text>
+            <Text style={styles.emptyText}>NO MISSIONS</Text>
+            <Text style={styles.emptySub}>Adjust your filters or post a new issue.</Text>
           </View>
         }
       />
@@ -272,40 +328,53 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.beige100 },
+  safe: { flex: 1, backgroundColor: '#0F1A14' },
 
   header: {
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.sm,
-    paddingBottom: SPACING.sm,
-    gap: 8,
+    paddingBottom: SPACING.md,
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E3A2A',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
+  headerLabel: {
+    fontFamily: FONT.pixel,
+    fontSize: 8,
+    color: '#48C9B0',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
   headerTitle: {
-    fontFamily: FONT.bold,
-    fontSize: 24,
-    color: COLORS.textDark,
-    letterSpacing: -0.5,
-  },
-  headerSub: {
-    fontFamily: FONT.regular,
+    fontFamily: FONT.pixel,
     fontSize: 13,
-    color: COLORS.textMuted,
-    marginTop: 2,
+    color: COLORS.white,
+    letterSpacing: 1,
   },
+  xpChip: {
+    backgroundColor: '#162212',
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
+  },
+  xpChipText: { fontFamily: FONT.pixel, fontSize: 8, color: '#48C9B0' },
+
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
+    backgroundColor: '#162212',
+    borderRadius: RADIUS.md,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: COLORS.beige300,
+    borderColor: '#1E3A2A',
     gap: 8,
   },
   searchIcon: { fontSize: 14 },
@@ -313,40 +382,38 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: FONT.regular,
     fontSize: 14,
-    color: COLORS.textDark,
+    color: COLORS.white,
   },
 
   sortRow: {
     flexDirection: 'row',
     marginHorizontal: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: COLORS.beige200,
+    marginVertical: SPACING.sm,
+    backgroundColor: '#162212',
     borderRadius: RADIUS.md,
     padding: 3,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
   },
   sortTab: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sortTabActive: {
-    backgroundColor: COLORS.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#1E3A2A',
   },
   sortLabel: {
-    fontFamily: FONT.medium,
-    fontSize: 12,
-    color: COLORS.textMuted,
+    fontFamily: FONT.pixel,
+    fontSize: 7,
+    color: '#3D5A48',
+    letterSpacing: 0.5,
   },
-  sortLabelActive: { color: COLORS.textDark },
+  sortLabelActive: { color: '#48C9B0' },
 
-  chipScroll: { maxHeight: 40, marginBottom: 4 },
+  chipScroll: { maxHeight: 38, marginBottom: 4 },
   chipContent: {
     paddingHorizontal: SPACING.md,
     gap: 6,
@@ -357,170 +424,137 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#162212',
     borderWidth: 1,
-    borderColor: COLORS.beige300,
+    borderColor: '#1E3A2A',
   },
   nhChipActive: {
-    backgroundColor: COLORS.greenDark,
-    borderColor: COLORS.greenDark,
+    backgroundColor: '#1E3A2A',
+    borderColor: '#48C9B0',
   },
-  nhChipText: {
-    fontFamily: FONT.medium,
-    fontSize: 12,
-    color: COLORS.textMid,
-  },
-  nhChipTextActive: { color: COLORS.white },
+  nhChipText: { fontFamily: FONT.medium, fontSize: 11, color: '#3D5A48' },
+  nhChipTextActive: { color: '#48C9B0' },
 
   catChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#162212',
     borderWidth: 1,
-    borderColor: COLORS.beige300,
+    borderColor: '#1E3A2A',
   },
-  catChipEmoji: { fontSize: 12 },
-  catChipText: {
-    fontFamily: FONT.medium,
-    fontSize: 12,
-    color: COLORS.textMid,
-  },
-  catChipTextActive: { color: COLORS.white },
+  catChipEmoji: { fontSize: 11 },
+  catChipText: { fontFamily: FONT.medium, fontSize: 11, color: '#3D5A48' },
 
-  listContent: { paddingHorizontal: SPACING.md, paddingBottom: 100, gap: 14, paddingTop: 6 },
+  countRow: {
+    paddingHorizontal: SPACING.md,
+    marginBottom: 6,
+  },
+  countText: {
+    fontFamily: FONT.pixel,
+    fontSize: 7,
+    color: '#2E4A38',
+    letterSpacing: 2,
+  },
+
+  listContent: { paddingHorizontal: SPACING.md, paddingBottom: 100, gap: 12, paddingTop: 4 },
 
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#162212',
     borderRadius: RADIUS.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
+  },
+  cardTrending: {
+    borderColor: '#4A7C2F',
+  },
+  cardHigh: {
+    borderColor: '#E05C5C',
+    shadowColor: '#E05C5C',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
   },
-  cardImage: {
-    width: '100%',
-    height: 180,
-    backgroundColor: COLORS.beige200,
+
+  trendingBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#0D2218',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E3A2A',
   },
+  trendingText: { fontFamily: FONT.pixel, fontSize: 7, color: '#48C9B0', letterSpacing: 1 },
+  trendingXp: { fontFamily: FONT.pixel, fontSize: 7, color: '#FFD166' },
+
+  cardImage: { width: '100%', height: 160, backgroundColor: '#0D2218' },
   cardBody: { padding: SPACING.md },
 
-  pendingBanner: {
-    backgroundColor: '#F5EEF8',
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#9B59B6',
-  },
-  pendingBannerText: {
-    fontFamily: FONT.medium,
-    fontSize: 12,
-    color: '#9B59B6',
-  },
-
-  cardMeta: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
+  cardMeta: { flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
   catBadge: {
     borderRadius: RADIUS.full,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    borderWidth: 1,
   },
-  catBadgeText: { fontFamily: FONT.semiBold, fontSize: 12 },
-  statusBadge: {
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: { fontFamily: FONT.semiBold, fontSize: 12 },
+  catBadgeText: { fontFamily: FONT.semiBold, fontSize: 11 },
+  statusBadge: { borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText: { fontFamily: FONT.medium, fontSize: 11 },
 
   cardTitle: {
-    fontFamily: FONT.semiBold,
-    fontSize: 16,
-    color: COLORS.textDark,
+    fontFamily: FONT.bold,
+    fontSize: 15,
+    color: '#E8F5E9',
     lineHeight: 22,
     marginBottom: 5,
   },
   cardDesc: {
     fontFamily: FONT.regular,
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     lineHeight: 19,
     marginBottom: 12,
   },
 
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: COLORS.beige200,
-  },
+  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#1E3A2A' },
   anonAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: COLORS.beige200,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#1E3A2A', justifyContent: 'center', alignItems: 'center',
   },
-  anonAvatarEmoji: { fontSize: 16 },
-  authorName: {
-    fontFamily: FONT.semiBold,
-    fontSize: 13,
-    color: COLORS.textDark,
-  },
-  cardTime: {
-    fontFamily: FONT.regular,
-    fontSize: 11,
-    color: COLORS.textMuted,
-    marginTop: 1,
-  },
+  anonAvatarEmoji: { fontSize: 15 },
+  authorName: { fontFamily: FONT.semiBold, fontSize: 12, color: '#9DC4A8' },
+  cardTime: { fontFamily: FONT.regular, fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
 
   upvoteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: COLORS.beige100,
+    backgroundColor: '#1E3A2A',
     borderRadius: RADIUS.full,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: COLORS.beige300,
+    borderColor: '#2E5A3A',
   },
   upvoteBtnActive: {
-    backgroundColor: COLORS.greenPale,
-    borderColor: COLORS.greenLight,
+    backgroundColor: '#0D2218',
+    borderColor: '#48C9B0',
   },
-  upvoteArrow: { fontSize: 12, color: COLORS.greenMid },
-  upvoteCount: {
-    fontFamily: FONT.semiBold,
-    fontSize: 14,
-    color: COLORS.textMid,
-  },
-  upvoteCountActive: { color: COLORS.greenDark },
+  upvoteArrow: { fontSize: 11, color: '#3D8A54' },
+  upvoteCount: { fontFamily: FONT.bold, fontSize: 14, color: '#7DB892' },
+  upvoteCountActive: { color: '#48C9B0' },
 
-  empty: {
-    alignItems: 'center',
-    paddingTop: 80,
-    gap: 8,
-  },
+  empty: { alignItems: 'center', paddingTop: 80, gap: 12 },
   emptyEmoji: { fontSize: 40 },
-  emptyText: { fontFamily: FONT.semiBold, fontSize: 18, color: COLORS.textDark },
-  emptySub: { fontFamily: FONT.regular, fontSize: 14, color: COLORS.textMuted },
+  emptyText: { fontFamily: FONT.pixel, fontSize: 12, color: '#2E4A38' },
+  emptySub: { fontFamily: FONT.regular, fontSize: 13, color: '#2E4A38', textAlign: 'center' },
 });

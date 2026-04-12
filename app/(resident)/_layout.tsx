@@ -4,71 +4,76 @@ import { View, Text, StyleSheet, Image } from 'react-native';
 import { COLORS, FONT } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
 
-// Pixel-art sprite positions within the tab_icons.png spritesheet
-// The image is a 3x3 grid of icons (approx 346x346 each in a 1038x1038 image)
-// Row 0: map, scroll/board, green plus
-// Row 1: lightning, orb (unused), lightning2 (unused)
-// Row 2: lightning3 (unused), trophy, helmet
-const ICON_SIZE = 346;
-const SHEET_SIZE = 1038;
+// Spritesheet is 2 cols x 3 rows, each cell ~512x512 in a 1024x1536 image
+// Row 0: map (0,0), feed/quests board (0,1)
+// Row 1: create plus (1,0), sidequest lightning (1,1)
+// Row 2: trophy (2,0), profile knight (2,1)
+const SHEET_W = 1024;
+const SHEET_H = 1536;
+const CELL_W = 512;
+const CELL_H = 512;
+const DISPLAY = 30;
+const SCALE_X = DISPLAY / CELL_W;
+const SCALE_Y = DISPLAY / CELL_H;
 
-type SpriteCoord = { row: number; col: number };
+type SpriteId = 'map' | 'feed' | 'create' | 'quest' | 'leaders' | 'profile';
 
-const SPRITES: Record<string, SpriteCoord> = {
-  map:      { row: 0, col: 0 },
-  feed:     { row: 0, col: 1 },
-  create:   { row: 0, col: 2 },
-  quest:    { row: 1, col: 0 },
-  leaders:  { row: 2, col: 1 },
-  profile:  { row: 2, col: 2 },
+const SPRITE_COORDS: Record<SpriteId, { col: number; row: number }> = {
+  map:     { col: 0, row: 0 },
+  feed:    { col: 1, row: 0 },
+  create:  { col: 0, row: 1 },
+  quest:   { col: 1, row: 1 },
+  leaders: { col: 0, row: 2 },
+  profile: { col: 1, row: 2 },
 };
 
-const ICON_DISPLAY = 28;
-
-function SpriteIcon({ sprite, label, focused }: { sprite: keyof typeof SPRITES; label: string; focused: boolean }) {
-  const { row, col } = SPRITES[sprite];
-  const scale = ICON_DISPLAY / ICON_SIZE;
+function SpriteIcon({ id, label, focused }: { id: SpriteId; label: string; focused: boolean }) {
+  const { col, row } = SPRITE_COORDS[id];
   return (
-    <View style={iconStyles.container}>
-      <View style={[iconStyles.spriteBox, focused && iconStyles.spriteBoxFocused]}>
-        <View style={{ width: ICON_DISPLAY, height: ICON_DISPLAY, overflow: 'hidden' }}>
+    <View style={iconStyles.wrap}>
+      <View style={[iconStyles.iconBox, focused && iconStyles.iconBoxFocused]}>
+        <View style={{ width: DISPLAY, height: DISPLAY, overflow: 'hidden' }}>
           <Image
             source={require('../../assets/icons/tab_icons.png')}
             style={{
-              width: SHEET_SIZE * scale,
-              height: SHEET_SIZE * scale,
+              width: SHEET_W * SCALE_X,
+              height: SHEET_H * SCALE_Y,
               position: 'absolute',
-              left: -(col * ICON_SIZE * scale),
-              top: -(row * ICON_SIZE * scale),
+              left: -(col * CELL_W * SCALE_X),
+              top: -(row * CELL_H * SCALE_Y),
             }}
+            resizeMode="cover"
           />
         </View>
       </View>
-      <Text style={[iconStyles.label, focused && iconStyles.labelActive]}>{label}</Text>
+      <Text style={[iconStyles.label, focused && iconStyles.labelFocused]}>{label}</Text>
     </View>
   );
 }
 
 const iconStyles = StyleSheet.create({
-  container: { alignItems: 'center', gap: 2 },
-  spriteBox: {
-    padding: 4,
-    borderRadius: 8,
+  wrap: { alignItems: 'center', justifyContent: 'center', gap: 3 },
+  iconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
-  spriteBoxFocused: {
-    backgroundColor: 'rgba(72, 201, 176, 0.2)',
+  iconBoxFocused: {
+    backgroundColor: 'rgba(72, 201, 176, 0.15)',
     borderWidth: 1,
     borderColor: '#48C9B0',
   },
   label: {
-    fontFamily: FONT.medium,
-    fontSize: 9,
-    color: '#6B7C6E',
-    letterSpacing: 0.3,
+    fontFamily: FONT.pixel,
+    fontSize: 6,
+    color: '#4A6357',
+    letterSpacing: 0,
   },
-  labelActive: {
+  labelFocused: {
     color: '#48C9B0',
-    fontFamily: FONT.bold,
   },
 });
 
@@ -87,66 +92,38 @@ export default function ResidentLayout() {
         headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: false,
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <SpriteIcon sprite="map" label="MAP" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <SpriteIcon id="map" label="MAP" focused={focused} /> }}
       />
       <Tabs.Screen
         name="feed"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <SpriteIcon sprite="feed" label="FEED" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <SpriteIcon id="feed" label="FEED" focused={focused} /> }}
       />
       <Tabs.Screen
         name="create"
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={styles.createBtn}>
-              <Image
-                source={require('../../assets/icons/tab_icons.png')}
-                style={{
-                  width: SHEET_SIZE * (36 / ICON_SIZE),
-                  height: SHEET_SIZE * (36 / ICON_SIZE),
-                  position: 'absolute',
-                  left: -(2 * ICON_SIZE * (36 / ICON_SIZE)),
-                  top: -(0 * ICON_SIZE * (36 / ICON_SIZE)),
-                }}
-              />
+              <Text style={styles.createPlus}>+</Text>
             </View>
           ),
         }}
       />
       <Tabs.Screen
         name="sidequests"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <SpriteIcon sprite="quest" label="QUESTS" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <SpriteIcon id="quest" label="QUESTS" focused={focused} /> }}
       />
       <Tabs.Screen
         name="leaders"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <SpriteIcon sprite="leaders" label="RANKS" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <SpriteIcon id="leaders" label="RANKS" focused={focused} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <SpriteIcon sprite="profile" label="HERO" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <SpriteIcon id="profile" label="HERO" focused={focused} /> }}
       />
     </Tabs>
   );
@@ -154,33 +131,37 @@ export default function ResidentLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#0F1A14',
+    backgroundColor: '#0D1710',
     borderTopWidth: 1,
     borderTopColor: '#1E3A2A',
-    height: 84,
-    paddingBottom: 14,
-    paddingTop: 10,
+    height: 82,
+    paddingBottom: 12,
+    paddingTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
     elevation: 20,
   },
   createBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1E3A2A',
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#162212',
     borderWidth: 2,
     borderColor: '#48C9B0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
     shadowColor: '#48C9B0',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
     elevation: 10,
-    overflow: 'hidden',
+  },
+  createPlus: {
+    fontSize: 26,
+    color: '#48C9B0',
+    fontFamily: FONT.pixel,
+    lineHeight: 30,
   },
 });

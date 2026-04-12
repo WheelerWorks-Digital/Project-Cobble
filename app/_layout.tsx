@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { PressStart2P_400Regular } from '@expo-google-fonts/press-start-2p';
 import { View, ActivityIndicator } from 'react-native';
 import { AppProvider } from '../context/AppContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -13,6 +14,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    PressStart2P_400Regular,
   });
 
   if (!fontsLoaded) {
