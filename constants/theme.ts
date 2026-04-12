@@ -77,9 +77,9 @@ export const RADIUS = {
 };
 
 export const FONT = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
+  regular: 'PressStart2P_400Regular',
+  medium: 'PressStart2P_400Regular',
+  semiBold: 'PressStart2P_400Regular',
+  bold: 'PressStart2P_400Regular',
   pixel: 'PressStart2P_400Regular',
 };

@@ -20,6 +20,12 @@ export default function ResidentLeaderboard() {
     { id: '2', name: 'Marcus R.', avatar: 'https://i.pravatar.cc/150?img=52', rank: 'Active Neighbor', xp: 215, neighborhood: 'Kensington', verified: true },
     { id: '3', name: 'Priya N.', avatar: 'https://i.pravatar.cc/150?img=44', rank: 'Active Neighbor', xp: 180, neighborhood: 'University City', verified: false },
     { id: '4', name: 'Maria S.', avatar: 'https://i.pravatar.cc/150?img=47', rank: 'Newcomer', xp: 95, neighborhood: 'Fishtown', verified: false },
+    { id: '5', name: 'David K.', avatar: 'https://i.pravatar.cc/150?img=12', rank: 'Newcomer', xp: 80, neighborhood: 'South Philly', verified: false },
+    { id: '6', name: 'Sarah L.', avatar: 'https://i.pravatar.cc/150?img=23', rank: 'Block Captain', xp: 490, neighborhood: 'Center City', verified: true },
+    { id: '7', name: 'Kenan T.', avatar: 'https://i.pravatar.cc/150?img=33', rank: 'Neighborhood Legend', xp: 850, neighborhood: 'Fairmount', verified: true },
+    { id: '8', name: 'Olivia J.', avatar: 'https://i.pravatar.cc/150?img=41', rank: 'Active Neighbor', xp: 290, neighborhood: 'Northern Liberties', verified: false },
+    { id: '9', name: 'Jamal W.', avatar: 'https://i.pravatar.cc/150?img=59', rank: 'Newcomer', xp: 50, neighborhood: 'West Philly', verified: false },
+    { id: '10', name: 'Elena P.', avatar: 'https://i.pravatar.cc/150?img=68', rank: 'Active Neighbor', xp: 150, neighborhood: 'East Passyunk', verified: true },
   ];
 
   const dynamicLeaders = leaders.map(l => l.isMe ? { ...l, xp: userStats.xp } : l).sort((a, b) => b.xp - a.xp);

@@ -54,7 +54,7 @@ function buildMapHtml(posts: Post[]) {
     L.marker([${n.lat}, ${n.lng}], {
       icon: L.divIcon({
         className: '',
-        html: '<div style="background:transparent;color:#000;padding:5px 12px;border-radius:20px;font-size:12px;font-family:sans-serif;font-weight:700;white-space:nowrap;letter-spacing:0.3px;">${n.name}</div>',
+        html: '<div style="background:transparent;color:#48C9B0;padding:5px 12px;text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;font-size:8px;font-family:\\'Press Start 2P\\', monospace;line-height:1.5;white-space:nowrap;letter-spacing:1px;text-transform:uppercase;">${n.name}</div>',
         iconAnchor: [40, 14],
       }),
       interactive: false,
@@ -67,16 +67,30 @@ function buildMapHtml(posts: Post[]) {
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body, #map { width: 100%; height: 100%; }
-    .leaflet-container { background: #EDE6D6; }
-    .leaflet-tile { filter: saturate(0.6) sepia(0.25) hue-rotate(60deg) brightness(1.05); }
+    .leaflet-container { background: #0F1A14; }
+    /* Dark map filter to make it look extra retro */
+    .leaflet-tile { filter: contrast(1.2) grayscale(0.5) sepia(0.3) hue-rotate(90deg) brightness(0.6) invert(1) hue-rotate(180deg); }
     .leaflet-control-attribution { display: none; }
     .leaflet-control-zoom { display: none; }
-    .cobble-tip { font-family: sans-serif; font-size: 12px; border-radius: 8px; padding: 4px 8px; }
+    .cobble-tip { 
+      font-family: 'Press Start 2P', monospace; 
+      font-size: 8px; 
+      padding: 6px 10px; 
+      background: #162212; 
+      color: #48C9B0; 
+      border: 1px solid #1E3A2A; 
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.5); 
+      border-radius: 0; 
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+    .leaflet-tooltip-top:before { border-top-color: #162212; }
   </style>
 </head>
 <body>
@@ -88,6 +102,7 @@ function buildMapHtml(posts: Post[]) {
       zoomControl: false,
     });
 
+    // We use standard tiles but invert/filter them to look dark and retro
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
     }).addTo(map);
@@ -248,7 +263,7 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige100 },
+  container: { flex: 1, backgroundColor: '#0F1A14' },
   map: { ...StyleSheet.absoluteFillObject },
 
   headerSafe: {
@@ -263,32 +278,36 @@ const styles = StyleSheet.create({
     gap: 10,
     marginHorizontal: SPACING.md,
     marginTop: 8,
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.xl,
+    backgroundColor: '#162212',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
     paddingHorizontal: SPACING.md,
-    paddingVertical: 8,
+    paddingVertical: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
     elevation: 6,
   },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   logoEmoji: { fontSize: 16 },
-  logoLabel: { fontFamily: FONT.bold, fontSize: 15, color: COLORS.greenDark },
+  logoLabel: { fontFamily: FONT.pixel, fontSize: 10, color: '#48C9B0' },
   searchBar: {
     flex: 1,
-    fontFamily: FONT.regular,
-    fontSize: 14,
-    color: COLORS.textDark,
-    backgroundColor: COLORS.beige100,
-    borderRadius: RADIUS.full,
+    fontFamily: FONT.pixel,
+    fontSize: 9,
+    color: COLORS.white,
+    backgroundColor: '#0F1A14',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
     paddingHorizontal: 12,
     paddingVertical: 7,
     minHeight: 34,
   },
 
-  filterScroll: { marginTop: 8 },
+  filterScroll: { marginTop: 10 },
   filterContent: {
     paddingHorizontal: SPACING.md,
     gap: 8,
@@ -298,99 +317,110 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: '#162212',
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
+    borderRadius: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
     elevation: 2,
   },
-  chipEmoji: { fontSize: 18 },
-  chipLabel: { fontFamily: FONT.medium, fontSize: 16, color: COLORS.textMid },
+  chipEmoji: { fontSize: 14 },
+  chipLabel: { fontFamily: FONT.pixel, fontSize: 8, color: '#3D5A48' },
   chipLabelActive: { color: COLORS.white },
 
   countBubble: {
     position: 'absolute',
-    bottom: 190,
+    bottom: 150,
     right: SPACING.md,
-    backgroundColor: COLORS.greenDark,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    backgroundColor: '#0F1A14',
+    borderWidth: 1,
+    borderColor: '#48C9B0',
+    borderRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
   },
-  countText: { fontFamily: FONT.semiBold, fontSize: 13, color: COLORS.white },
+  countText: { fontFamily: FONT.pixel, fontSize: 8, color: '#48C9B0' },
 
   selectedCard: {
     position: 'absolute',
     bottom: 100,
     left: SPACING.md,
     right: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
+    backgroundColor: '#162212',
+    borderWidth: 1,
+    borderColor: '#48C9B0',
+    borderRadius: 0,
     padding: SPACING.md,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 0,
     elevation: 12,
   },
   closeBtn: {
     position: 'absolute',
-    top: 10,
-    right: 12,
+    top: 6,
+    right: 8,
     zIndex: 10,
     padding: 4,
   },
-  closeX: { fontSize: 16, color: COLORS.textMuted },
+  closeX: { fontFamily: FONT.pixel, fontSize: 10, color: '#3D5A48' },
 
   cardRow: { flexDirection: 'row', gap: 12, marginBottom: 10 },
   cardImage: {
-    width: 72,
-    height: 72,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.beige200,
+    width: 64,
+    height: 64,
+    borderRadius: 0,
+    backgroundColor: '#0F1A14',
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
   },
   cardInfo: { flex: 1, gap: 5 },
   catChip: {
     alignSelf: 'flex-start',
-    borderRadius: RADIUS.full,
+    borderRadius: 0,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
   },
-  catChipText: { fontFamily: FONT.medium, fontSize: 11, color: COLORS.textMid },
+  catChipText: { fontFamily: FONT.pixel, fontSize: 7, color: COLORS.white },
   cardTitle: {
-    fontFamily: FONT.semiBold,
-    fontSize: 14,
-    color: COLORS.textDark,
-    lineHeight: 19,
+    fontFamily: FONT.pixel,
+    fontSize: 9,
+    color: '#E8F5E9',
+    lineHeight: 14,
   },
   cardNeighborhood: {
-    fontFamily: FONT.regular,
-    fontSize: 12,
-    color: COLORS.textMuted,
+    fontFamily: FONT.pixel,
+    fontSize: 7,
+    color: '#3D5A48',
+    marginTop: 4,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: COLORS.beige200,
+    borderTopColor: '#1E3A2A',
     paddingTop: 10,
   },
   upvoteRow: { flexDirection: 'row', alignItems: 'center' },
-  upvoteText: { fontFamily: FONT.medium, fontSize: 13, color: COLORS.greenMid },
+  upvoteText: { fontFamily: FONT.pixel, fontSize: 7, color: '#FFD166' },
   viewBtn: {
-    backgroundColor: COLORS.greenMid,
-    borderRadius: RADIUS.full,
+    backgroundColor: '#48C9B0',
+    borderRadius: 0,
     paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
-  viewBtnText: { fontFamily: FONT.semiBold, fontSize: 13, color: COLORS.white },
+  viewBtnText: { fontFamily: FONT.pixel, fontSize: 8, color: '#0F1A14' },
 });
