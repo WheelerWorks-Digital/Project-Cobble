@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +13,7 @@ import { COLORS, FONT, SPACING, RADIUS } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
 
 export default function ResidentLeaderboard() {
-  const { userStats } = useApp() as any;
+  const { userStats } = useApp();
 
   const leaders = [
     { id: '1', name: 'Alex Rivera', avatar: 'https://i.pravatar.cc/150?img=3', rank: 'Block Captain', xp: 520, neighborhood: 'Fishtown', verified: true, isMe: true },
@@ -22,37 +22,40 @@ export default function ResidentLeaderboard() {
     { id: '4', name: 'Maria S.', avatar: 'https://i.pravatar.cc/150?img=47', rank: 'Newcomer', xp: 95, neighborhood: 'Fishtown', verified: false },
   ];
 
-  // Inject current dynamic XP for the mock "Alex Rivera" (the logged in user)
-  const dynamicLeaders = leaders.map(l => l.isMe ? { ...l, xp: userStats.xp } : l).sort((a,b) => b.xp - a.xp);
+  const dynamicLeaders = leaders.map(l => l.isMe ? { ...l, xp: userStats.xp } : l).sort((a, b) => b.xp - a.xp);
+
+  const MEDAL_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
+  const MEDAL_LABELS = ['🥇', '🥈', '🥉'];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <LinearGradient
-        colors={[COLORS.greenDark, COLORS.greenMid]}
+        colors={['#0F1A14', '#162212', '#1A2E1A']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Text style={styles.headerEmoji}>🏆</Text>
-        <Text style={styles.headerTitle}>Neighborhood Legends</Text>
-        <Text style={styles.headerSub}>Top contributors making a difference in Philadelphia.</Text>
+        <Text style={styles.headerLabel}>LEADERBOARD</Text>
+        <Text style={styles.headerTitle}>🏆 Neighborhood Legends</Text>
+        <Text style={styles.headerSub}>Top civic contributors across Philadelphia</Text>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         {dynamicLeaders.map((leader, i) => (
-          <TouchableOpacity 
-            key={leader.id} 
-            style={[styles.card, leader.isMe && styles.cardMe]} 
-            activeOpacity={0.9}
-          >
-            <View style={[styles.rankBadge, i === 0 && styles.rankGold, i === 1 && styles.rankSilver, i === 2 && styles.rankBronze]}>
-              <Text style={[styles.rankNum, i < 3 && styles.rankNumWin]}>#{i + 1}</Text>
+          <View key={leader.id} style={[styles.card, leader.isMe && styles.cardMe, i === 0 && styles.cardFirst]}>
+            {/* Rank Number */}
+            <View style={[styles.rankBadge, i === 0 && { backgroundColor: '#FFD70022', borderColor: '#FFD700' }, i === 1 && { borderColor: '#C0C0C0' }, i === 2 && { borderColor: '#CD7F32' }]}>
+              <Text style={[styles.rankNum, i === 0 && { color: '#FFD700' }, i === 1 && { color: '#C0C0C0' }, i === 2 && { color: '#CD7F32' }]}>
+                {i < 3 ? MEDAL_LABELS[i] : `#${i + 1}`}
+              </Text>
             </View>
-            <Image source={{ uri: leader.avatar }} style={styles.avatar} />
+
+            <Image source={{ uri: leader.avatar }} style={[styles.avatar, i === 0 && styles.avatarFirst]} />
+
             <View style={styles.info}>
               <View style={styles.nameRow}>
-                <Text style={styles.name}>{leader.isMe ? "You" : leader.name}</Text>
+                <Text style={[styles.name, i === 0 && styles.nameFirst]}>{leader.isMe ? 'YOU' : leader.name}</Text>
                 {leader.verified && (
                   <View style={styles.verifyBadge}>
                     <Text style={styles.verifyIcon}>✓</Text>
@@ -60,88 +63,111 @@ export default function ResidentLeaderboard() {
                 )}
               </View>
               <Text style={styles.neighborhood}>📍 {leader.neighborhood}</Text>
-              <Text style={styles.rankText}>{leader.rank} · {leader.xp} XP</Text>
-            </View>
-            {leader.isMe && (
-              <View style={styles.meLabel}>
-                <Text style={styles.meLabelText}>YOU</Text>
+
+              {/* Mini XP bar */}
+              <View style={styles.miniBarTrack}>
+                <View style={[styles.miniBarFill, { width: `${Math.min(leader.xp / 600, 1) * 100}%` as any, backgroundColor: i === 0 ? '#FFD700' : '#48C9B0' }]} />
               </View>
-            )}
-          </TouchableOpacity>
+              <Text style={[styles.rankText, i === 0 && { color: '#FFD700' }]}>{leader.rank}  ·  {leader.xp} XP</Text>
+            </View>
+          </View>
         ))}
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Rankings update when neighbors take action 🌱</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.beige100 },
+  safe: { flex: 1, backgroundColor: '#0F1A14' },
+
   header: {
     padding: SPACING.lg,
     paddingTop: SPACING.md,
     alignItems: 'center',
-    borderBottomLeftRadius: RADIUS.lg,
-    borderBottomRightRadius: RADIUS.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E3A2A',
   },
-  headerEmoji: { fontSize: 40, marginBottom: 8 },
-  headerTitle: { fontFamily: FONT.bold, fontSize: 24, color: COLORS.white, marginBottom: 6 },
-  headerSub: { fontFamily: FONT.regular, fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', lineHeight: 18 },
+  headerLabel: {
+    fontFamily: FONT.bold,
+    fontSize: 10,
+    color: '#48C9B0',
+    letterSpacing: 4,
+    marginBottom: 6,
+  },
+  headerTitle: {
+    fontFamily: FONT.bold,
+    fontSize: 22,
+    color: COLORS.white,
+    marginBottom: 4,
+  },
+  headerSub: {
+    fontFamily: FONT.regular,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+  },
 
-  scroll: { padding: SPACING.md, gap: 12, paddingBottom: 100 },
+  scroll: { padding: SPACING.md, gap: 10, paddingBottom: 100 },
+
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: '#162212',
     borderRadius: RADIUS.md,
     padding: SPACING.md,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#1E3A2A',
   },
   cardMe: {
-    borderColor: COLORS.greenMid,
-    backgroundColor: '#F7FCF5',
+    borderColor: '#48C9B0',
+    backgroundColor: '#0D2218',
   },
+  cardFirst: {
+    borderColor: '#FFD700',
+    backgroundColor: '#1A1800',
+  },
+
   rankBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.beige100,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
+    borderColor: '#1E3A2A',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rankGold: { backgroundColor: '#FFD700' },
-  rankSilver: { backgroundColor: '#C0C0C0' },
-  rankBronze: { backgroundColor: '#CD7F32' },
-  rankNum: { fontFamily: FONT.bold, fontSize: 14, color: COLORS.textMuted },
-  rankNumWin: { color: COLORS.white },
-  
-  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.beige200 },
-  info: { flex: 1, gap: 2 },
+  rankNum: { fontSize: 18, fontFamily: FONT.bold, color: 'rgba(255,255,255,0.4)' },
+
+  avatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#1E3A2A' },
+  avatarFirst: { borderColor: '#FFD700', width: 54, height: 54, borderRadius: 27 },
+
+  info: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontFamily: FONT.semiBold, fontSize: 15, color: COLORS.textDark },
+  name: { fontFamily: FONT.semiBold, fontSize: 15, color: COLORS.white },
+  nameFirst: { color: '#FFD700', fontSize: 16 },
   verifyBadge: {
     backgroundColor: '#3498DB',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 14, height: 14, borderRadius: 7,
+    justifyContent: 'center', alignItems: 'center',
   },
   verifyIcon: { color: COLORS.white, fontSize: 8, fontFamily: FONT.bold },
-  neighborhood: { fontFamily: FONT.regular, fontSize: 12, color: COLORS.textMuted },
-  rankText: { fontFamily: FONT.medium, fontSize: 11, color: COLORS.greenMid, marginTop: 4 },
+  neighborhood: { fontFamily: FONT.regular, fontSize: 11, color: 'rgba(255,255,255,0.4)' },
 
-  meLabel: {
-    backgroundColor: COLORS.greenMid,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  miniBarTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1E3A2A',
+    overflow: 'hidden',
+    marginTop: 4,
   },
-  meLabelText: { fontFamily: FONT.bold, fontSize: 10, color: COLORS.white },
+  miniBarFill: { height: '100%', borderRadius: 2 },
+  rankText: { fontFamily: FONT.medium, fontSize: 11, color: '#48C9B0', marginTop: 3 },
+
+  footer: { alignItems: 'center', paddingTop: 8 },
+  footerText: { fontFamily: FONT.regular, fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center' },
 });

@@ -27,6 +27,15 @@ export const COLORS = {
   statusAcknowledged: '#D97B2F',
   statusInProgress: '#5B8DD9',
   statusResolved: '#4A7C2F',
+
+  // Game palette (dark RPG theme)
+  gameBg: '#0F1A14',
+  gameSurface: '#162212',
+  gameBorder: '#1E3A2A',
+  gameAccent: '#48C9B0',
+  gameGold: '#FFD166',
+  gameRed: '#EF4D6D',
+  gamePurple: '#9B59B6',
 };
 
 export const CATEGORY_META = {

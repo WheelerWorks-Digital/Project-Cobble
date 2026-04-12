@@ -181,7 +181,9 @@ const xpStyles = StyleSheet.create({
 });
 
 export default function SidequestsScreen() {
-  const { userStats, addXP } = useApp() as any; // Cast as any for simplicity in hackathon
+  const appCtx = useApp();
+  const userStats = appCtx.userStats;
+  const addXP = appCtx.addXP;
   const [activeCategory, setActiveCategory] = useState<QuestCategory>('all');
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
@@ -205,7 +207,7 @@ export default function SidequestsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <LinearGradient
-        colors={[COLORS.greenDark, COLORS.greenMid]}
+        colors={['#0F1A14', '#162212', '#1E3A2A']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerGrad}
@@ -310,13 +312,15 @@ export default function SidequestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.beige100 },
+  safe: { flex: 1, backgroundColor: '#0F1A14' },
 
   headerGrad: {
     paddingHorizontal: SPACING.md,
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
     gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E3A2A',
   },
   headerInner: {
     flexDirection: 'row',
@@ -325,15 +329,17 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: FONT.bold,
-    fontSize: 24,
-    color: COLORS.white,
-    letterSpacing: -0.5,
+    fontSize: 22,
+    color: '#48C9B0',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   headerSub: {
-    fontFamily: FONT.regular,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
+    letterSpacing: 1,
   },
   xpBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
@@ -382,21 +388,23 @@ const styles = StyleSheet.create({
   },
 
   questCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: '#162212',
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
     gap: 10,
+    borderWidth: 1,
+    borderColor: '#1E3A2A',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 3,
   },
   questCardDone: {
     opacity: 0.8,
     borderWidth: 1.5,
-    borderColor: COLORS.greenLight,
-    backgroundColor: COLORS.greenPale,
+    borderColor: '#48C9B0',
+    backgroundColor: '#0D2218',
   },
 
   questHeader: {
@@ -433,17 +441,17 @@ const styles = StyleSheet.create({
   questTitle: {
     fontFamily: FONT.semiBold,
     fontSize: 16,
-    color: COLORS.textDark,
+    color: '#E8F5E9',
     lineHeight: 22,
   },
   questTitleDone: {
     textDecorationLine: 'line-through',
-    color: COLORS.textMuted,
+    color: '#48C9B0',
   },
   questDesc: {
     fontFamily: FONT.regular,
     fontSize: 13,
-    color: COLORS.textMuted,
+    color: 'rgba(255,255,255,0.5)',
     lineHeight: 19,
   },
 
@@ -452,13 +460,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: COLORS.beige200,
+    borderTopColor: '#1E3A2A',
     paddingTop: 10,
   },
   questCompletedBy: {
     fontFamily: FONT.regular,
     fontSize: 12,
-    color: COLORS.textMuted,
+    color: 'rgba(255,255,255,0.4)',
     flex: 1,
   },
   questBtn: {
@@ -485,5 +493,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyEmoji: { fontSize: 40 },
-  emptyText: { fontFamily: FONT.semiBold, fontSize: 16, color: COLORS.textMuted },
+  emptyText: { fontFamily: FONT.semiBold, fontSize: 16, color: 'rgba(255,255,255,0.4)' },
 });

@@ -13,6 +13,7 @@ interface AppContextType {
   toggleUpvote: (postId: string) => void;
   addPost: (post: Post) => void;
   userStats: UserStats;
+  addXP: (amount: number, reason: string) => void;
 }
 
 const DEFAULT_BADGES: Badge[] = [
@@ -119,7 +120,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ userRole, setUserRole, posts, updatePostStatus, updatePost, toggleUpvote, addPost, userStats }}
+      value={{ userRole, setUserRole, posts, updatePostStatus, updatePost, toggleUpvote, addPost, userStats, addXP }}
     >
       {children}
     </AppContext.Provider>
