@@ -19,7 +19,7 @@ const SCALE_Y = DISPLAY / CELL_H;
 type SpriteId = 'map' | 'feed' | 'create' | 'quest' | 'leaders' | 'profile';
 
 const SPRITE_COORDS: Record<SpriteId, { col: number; row: number }> = {
-  map:     { col: 0, row: 0 },
+  map:     { col: 1, row: 0 },
   feed:    { col: 1, row: 0 },
   create:  { col: 0, row: 1 },
   quest:   { col: 1, row: 1 },
@@ -41,6 +41,7 @@ function SpriteIcon({ id, label, focused }: { id: SpriteId; label: string; focus
               position: 'absolute',
               left: -(col * CELL_W * SCALE_X),
               top: -(row * CELL_H * SCALE_Y),
+              right: -(col * CELL_W * SCALE_X),
             }}
             resizeMode="cover"
           />
@@ -52,7 +53,7 @@ function SpriteIcon({ id, label, focused }: { id: SpriteId; label: string; focus
 }
 
 const iconStyles = StyleSheet.create({
-  wrap: { alignItems: 'center', justifyContent: 'center', gap: 3 },
+  wrap: { alignItems: 'center', justifyContent: 'center', gap: 3},
   iconBox: {
     width: 38,
     height: 38,
@@ -137,6 +138,7 @@ const styles = StyleSheet.create({
     height: 82,
     paddingBottom: 12,
     paddingTop: 8,
+    paddingLeft: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.5,
